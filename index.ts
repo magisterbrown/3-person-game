@@ -49,6 +49,7 @@ class Line {
     b: number
     c: number
     dist: number
+
     constructor(name: string, d: number, a: number, l: number) {
         this.name = name
         this.p1 = rotate(a, {x: l/2, y: d});
@@ -60,7 +61,11 @@ class Line {
     }
     distance(x: number, y: number): number {
         const sign = Math.sign((this.a*x+this.b*y+this.c)*this.c)
-        return sign*(Math.abs(this.a*x+this.b*y+this.c)/Math.sqrt(this.a**2+this.b**2))/this.dist-1}
+        return sign*(Math.abs(this.a*x+this.b*y+this.c)/Math.sqrt(this.a**2+this.b**2))/this.dist-1
+    }
+    getX(y: number): number {
+        return (-this.c-this.b*y)/this.a;
+    }
 }
 function strokeLine(ctx: CanvasRenderingContext2D, dist: number, angle: number, width: number) {
    ctx.beginPath();
@@ -79,7 +84,41 @@ function render(ctx: CanvasRenderingContext2D, mouseX: number, mouseY: number) {
 
 
    const background = ctx.createImageData(ctx.canvas.width, ctx.canvas.height);
-   const sol: Imputation[] = [{p1: axis[0].distance(mouseX-center.x, mouseY-center.y), p2: axis[1].distance(mouseX-center.x, mouseY-center.y), p3: axis[2].distance(mouseX-center.x, mouseY-center.y)}];
+   const selector = document.getElementById("nsol") as (HTMLSelectElement | null);
+   if(selector === null)
+       throw new Error("selector not detected");
+   var drawP: Point[] = [];
+   var sol: Imputation[] = [];
+
+   switch(selector.value) {
+    case "1": {
+        drawP.push({x: mouseX, y: mouseY})
+        sol.push({p1: axis[0].distance(mouseX-center.x, mouseY-center.y), p2: axis[1].distance(mouseX-center.x, mouseY-center.y), p3: axis[2].distance(mouseX-center.x, mouseY-center.y)});
+        break;
+    }
+    case "2": {
+        const xp1 = axis[1].getX(mouseY-center.y)
+        const xp2 = axis[2].getX(mouseY-center.y)
+        drawP.push({x: xp1+center.x, y:mouseY})
+        drawP.push({x: xp2+center.x, y:mouseY})
+        sol.push({p1: axis[0].distance(xp1, mouseY-center.y+1), p2: axis[1].distance(xp1, mouseY-center.y+1), p3: axis[2].distance(xp1, mouseY-center.y+1)});
+        sol.push({p1: axis[0].distance(xp2, mouseY-center.y-1), p2: axis[1].distance(xp2, mouseY-center.y-1), p3: axis[2].distance(xp2, mouseY-center.y-1)});
+        break;
+    }
+    case "3": {
+        drawP.push({x: center.x, y:center.y+axis[0].dist})
+        const yp = -axis[0].dist/2
+        const xp1 = axis[1].getX(yp)
+        const xp2 = axis[2].getX(yp)
+        drawP.push({x: center.x+xp1, y:center.y+yp})
+        drawP.push({x: center.x+xp2, y:center.y+yp})
+
+        sol.push({p1: axis[0].distance(0, axis[0].dist-1), p2: axis[1].distance(0, axis[0].dist-1), p3: axis[2].distance(0, axis[0].dist-1)});
+        sol.push({p1: axis[0].distance(xp1, yp+1), p2: axis[1].distance(xp1, yp+1), p3: axis[2].distance(xp1, yp+1)});
+        sol.push({p1: axis[0].distance(xp2, yp-1), p2: axis[1].distance(xp2, yp-1), p3: axis[2].distance(xp2, yp-1)});
+        break;
+    }
+   }
 
    for(let i=0; i<background.data.length; i+=4) {
         const xp = Math.floor((i%(ctx.canvas.width*4))/4);
@@ -102,7 +141,6 @@ function render(ctx: CanvasRenderingContext2D, mouseX: number, mouseY: number) {
    }
    ctx.putImageData(background, 0, 0);
 
-
    axis.forEach((ax, index) => {
     ctx.strokeStyle = '#888';
     ctx.setLineDash([15, 5]);
@@ -120,11 +158,13 @@ function render(ctx: CanvasRenderingContext2D, mouseX: number, mouseY: number) {
     console.log("Mouse y: "+(mouseY-center.y));
    });
 
-   ctx.beginPath()
-   ctx.setLineDash([]);
-   ctx.arc(mouseX, mouseY, 8, 0, 2 * Math.PI);
-   ctx.fillStyle = "#f00";
-   ctx.fill();
+   drawP.forEach((pt) => {
+    ctx.beginPath()
+    ctx.setLineDash([]);
+    ctx.arc(pt.x, pt.y, 8, 0, 2 * Math.PI);
+    ctx.fillStyle = "#f00";
+    ctx.fill();
+   });
 }
 
 (() => {

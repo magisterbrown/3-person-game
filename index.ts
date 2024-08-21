@@ -92,12 +92,12 @@ function render(ctx: CanvasRenderingContext2D, mouseX: number, mouseY: number) {
         background.data[i+3] = 255;
         if(isValid(pix))
         {
-            if(dominations(pix, sol) < 0)
+            if(dominations(pix, sol) > 0 || !isValid(sol[0]))
+                background.data[i+2] = 100;
+            else if(dominations(pix, sol) < 0)
                 background.data[i] = 255;
             else if(dominations(pix, sol) == 0)
                 background.data[i+1] = 100;
-            else if(dominations(pix, sol) > 0)
-                background.data[i+2] = 100;
         }
    }
    ctx.putImageData(background, 0, 0);
@@ -141,7 +141,8 @@ function render(ctx: CanvasRenderingContext2D, mouseX: number, mouseY: number) {
 
     window.addEventListener('mousemove', (e: MouseEvent) => {
         var rect = canv.getBoundingClientRect();
-        render(ctx, e.offsetX-rect.x, e.offsetY-rect.y);
+        console.log(rect.x);
+        render(ctx, e.offsetX, e.offsetY);
     });
     console.log(ctx);
 })()

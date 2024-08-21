@@ -4,11 +4,42 @@ type Point = {
     y: number
 };
 
-
 function rotate(angle: number, point: Point): Point {
     const rad = Math.PI*angle/180;
     return {x: Math.cos(rad)*point.x-Math.sin(rad)*point.y, y:Math.sin(rad)*point.x+Math.cos(rad)*point.y};
 }
+
+type Imputation = {
+    p1: number
+    p2: number
+    p3: number
+}
+
+function isValid(imp: Imputation): boolean {
+   return imp.p1>-1 && imp.p2>-1 && imp.p3>-1 
+}
+
+function cmp(a: number, b: number): number {
+    if(Math.abs(a-b)<0.03)
+        return 0;
+    else if(a>b)
+        return 1;
+    return -1;
+}
+
+function dominations(imp: Imputation, sol: Imputation[]): number {
+    let anyd = false;
+    for(let i=0;i<sol.length;i++){
+        const domn = cmp(imp.p1,sol[i].p1) + cmp(imp.p2,sol[i].p2) + cmp(imp.p3,sol[i].p3);
+        if(domn<0)
+            return -1;
+        anyd = anyd || domn>0;
+    }
+    if(anyd)
+        return 1;
+    return 0;
+}
+
 
 class Line {
     name: string
@@ -40,12 +71,36 @@ function strokeLine(ctx: CanvasRenderingContext2D, dist: number, angle: number, 
 
 function render(ctx: CanvasRenderingContext2D, mouseX: number, mouseY: number) {
    ctx.reset()
-   ctx.fillStyle = "#fff";
-   ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
    const center: Point = {x: ctx.canvas.width/2, y: ctx.canvas.height/2};
    const width = 3000;
    const dist = 70;
    var axis = [new Line("player1", dist, 0, width), new Line("player2", dist, 120, width), new Line("player3", dist, 240, width)];
+
+
+   const background = ctx.createImageData(ctx.canvas.width, ctx.canvas.height);
+   const sol: Imputation[] = [{p1: axis[0].distance(mouseX-center.x, mouseY-center.y), p2: axis[1].distance(mouseX-center.x, mouseY-center.y), p3: axis[2].distance(mouseX-center.x, mouseY-center.y)}];
+
+   for(let i=0; i<background.data.length; i+=4) {
+        const xp = Math.floor((i%(ctx.canvas.width*4))/4);
+        const yp = Math.floor(i/(ctx.canvas.width*4));
+        const pix: Imputation = {p1: axis[0].distance(xp-center.x, yp-center.y), p2: axis[1].distance(xp-center.x, yp-center.y), p3: axis[2].distance(xp-center.x, yp-center.y)};
+
+        background.data[i] = 255;
+        background.data[i+1] = 255;
+        background.data[i+2] = 255;
+        background.data[i+3] = 255;
+        if(isValid(pix))
+        {
+            if(dominations(pix, sol) < 0)
+                background.data[i] = 255;
+            else if(dominations(pix, sol) == 0)
+                background.data[i+1] = 100;
+            else if(dominations(pix, sol) > 0)
+                background.data[i+2] = 100;
+        }
+   }
+   ctx.putImageData(background, 0, 0);
 
 
    axis.forEach((ax, index) => {
@@ -67,7 +122,7 @@ function render(ctx: CanvasRenderingContext2D, mouseX: number, mouseY: number) {
 
    ctx.beginPath()
    ctx.setLineDash([]);
-   ctx.arc(mouseX, mouseY, 5, 0, 2 * Math.PI);
+   ctx.arc(mouseX, mouseY, 8, 0, 2 * Math.PI);
    ctx.fillStyle = "#f00";
    ctx.fill();
 }

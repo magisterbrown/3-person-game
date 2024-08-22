@@ -119,8 +119,6 @@ function render(ctx, mouseX, mouseY) {
         ctx.fillStyle = "#000";
         ctx.font = "20px Arial";
         ctx.fillText(ax.name + ": " + ax.distance(mouseX - center.x, mouseY - center.y).toFixed(2), 10, 20 * (1 + index));
-        console.log("Mouse x: " + (mouseX - center.x));
-        console.log("Mouse y: " + (mouseY - center.y));
     });
     drawP.forEach((pt) => {
         ctx.beginPath();
@@ -143,9 +141,6 @@ function render(ctx, mouseX, mouseY) {
     }
     window.addEventListener('mousemove', (e) => {
         var rect = canv.getBoundingClientRect();
-        console.log(rect.x);
         render(ctx, e.offsetX, e.offsetY);
     });
-    console.log(ctx);
 })();
-console.log("Heey");
